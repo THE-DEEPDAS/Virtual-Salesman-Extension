@@ -1,13 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "SalesmanBot",
+  "name": "SalesmanBot - AI PC Assistant",
   "version": "1.0",
-  "description": "Chatbot to help users find PC parts on e-commerce sites",
-  "permissions": ["scripting", "activeTab"],
+  "description": "AI-powered personal salesman to help you find PC parts and builds on e-commerce sites",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
   "host_permissions": [
-    "https://www.amazon.in/*",
-    "https://www.amazon.com/*",
-    "https://www.flipkart.com/*"
+    "*://*.amazon.in/*",
+    "*://*.amazon.com/*",
+    "*://*.flipkart.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -23,8 +26,14 @@
         "*://*.amazon.com/*",
         "*://*.flipkart.com/*"
       ],
-      "js": ["content.js"],
-      "run_at": "document_idle"
+      "js": ["utils/productExtractor.js", "utils/queryParser.js", "utils/aiService.js", "content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["utils/*.js"],
+      "matches": ["*://*.amazon.in/*", "*://*.amazon.com/*", "*://*.flipkart.com/*"]
     }
   ]
 }
