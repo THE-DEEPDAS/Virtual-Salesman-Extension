@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "SalesmanBot",
+  "version": "1.0",
+  "description": "Chatbot to help users find PC parts on e-commerce sites",
+  "permissions": ["scripting", "activeTab"],
+  "host_permissions": [
+    "https://www.amazon.in/*",
+    "https://www.amazon.com/*",
+    "https://www.flipkart.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "Salesman bot.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.amazon.in/*",
+        "*://*.amazon.com/*",
+        "*://*.flipkart.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
