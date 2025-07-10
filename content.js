@@ -88,9 +88,17 @@ async function handleUserQuery(query, sendResponse) {
     const parsedQuery = queryParser.parseQuery(query);
     console.log("Parsed query:", parsedQuery);
     
+    // Check if we're on a product page first
+    console.log("Checking current page URL:", window.location.href);
+    console.log("Page title:", document.title);
+    
     // Wait for products to load if necessary
-    const hasProducts = await productExtractor.waitForProducts(3000);
+    console.log("Waiting for products to load...");
+    const hasProducts = await productExtractor.waitForProducts(5000);
+    console.log("Products available:", hasProducts);
+    
     if (!hasProducts) {
+      console.log("No products detected, sending error message");
       chrome.runtime.sendMessage({
         type: 'ERROR',
         message: 'No products found on this page. Please navigate to a product search or listing page.'
@@ -99,10 +107,12 @@ async function handleUserQuery(query, sendResponse) {
     }
     
     // Extract products from the current page
+    console.log("Extracting products...");
     const products = productExtractor.extractProducts();
-    console.log(`Extracted ${products.length} products`);
+    console.log(`Extracted ${products.length} products:`, products.slice(0, 3)); // Log first 3 for debugging
     
     if (products.length === 0) {
+      console.log("Product extraction returned empty array");
       chrome.runtime.sendMessage({
         type: 'ERROR',
         message: 'No products could be extracted from this page. Please try on a product listing page.'

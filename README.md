@@ -122,10 +122,11 @@ Salesman Bot Extension/
 ## Troubleshooting
 
 ### Content Script Not Loading
-1. **Check URL**: Ensure you're on Amazon or Flipkart
+1. **Check URL**: Ensure you're on Amazon or Flipkart product listing pages (search results)
 2. **Reload Extension**: Go to `chrome://extensions/` and click reload
-3. **Refresh Page**: Reload the e-commerce page
-4. **Check Console**: Open DevTools and check for errors
+3. **Refresh Page**: Reload the e-commerce page after reloading the extension
+4. **Check Console**: Open DevTools (F12) → Console tab to see debug messages
+5. **Try Different Pages**: Search for products like "laptop" or "gaming pc" on Amazon/Flipkart
 
 ### AI Not Working
 1. **Verify API Key**: Ensure you've entered a valid Gemini API key
@@ -133,9 +134,10 @@ Salesman Bot Extension/
 3. **Network Issues**: Check internet connection and try again
 
 ### No Products Found
-1. **Navigate to Listings**: Go to search results or category pages
-2. **Wait for Load**: Let the page fully load before using extension
-3. **Try Different Page**: Some specialized pages may not be supported
+1. **Navigate to Search Results**: Go to product search pages, not product detail pages
+2. **Wait for Page Load**: Let the page fully load before using extension  
+3. **Try Different Search Terms**: Search for "laptop", "pc components", etc.
+4. **Check Browser Console**: Look for extraction debug messages
 
 ## Development
 
