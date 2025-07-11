@@ -145,10 +145,15 @@ function displayRecommendations(items, statusMessage) {
 }
 
 function displayAIRecommendations(message) {
-  const { recommendations, summary, buildSuggestion, alternatives, totalProducts, filteredProducts } = message;
+  const { recommendations, summary, buildSuggestion, alternatives, contextInsights, totalProducts, filteredProducts } = message;
   
   if (summary) {
-    addMessage('bot', `<b>Walmart Sparkathon AI Summary:</b><br>${summary}`);
+    addMessage('bot', `🤖 <b>AI Analysis:</b><br>${summary}`);
+  }
+
+  // Show context insights if available
+  if (contextInsights) {
+    addMessage('bot', `🧠 <b>Context Insights:</b><br>${contextInsights}`);
   }
   
   if (totalProducts !== undefined && filteredProducts !== undefined) {
@@ -164,6 +169,8 @@ function displayAIRecommendations(message) {
       const reason = rec.reason || '';
       const pros = rec.pros || [];
       const cons = rec.cons || [];
+      const contextAlignment = rec.contextAlignment || '';
+      const preferenceDeviation = rec.preferenceDeviation || '';
       
       const productCard = `
         <div class='card ai-recommendation'>
@@ -176,6 +183,8 @@ function displayAIRecommendations(message) {
             ${product.rating ? `<span class="rating">⭐ ${product.rating}</span>` : ''}
           </div>
           ${reason ? `<div class="ai-reason">💡 ${reason}</div>` : ''}
+          ${contextAlignment ? `<div class="context-alignment">🧠 <b>Context:</b> ${contextAlignment}</div>` : ''}
+          ${preferenceDeviation ? `<div class="preference-deviation">🔄 <b>Note:</b> ${preferenceDeviation}</div>` : ''}
           ${pros.length > 0 ? `<div class="pros">✅ ${pros.join(', ')}</div>` : ''}
           ${cons.length > 0 ? `<div class="cons">⚠️ ${cons.join(', ')}</div>` : ''}
           <div class="actions">

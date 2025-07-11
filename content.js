@@ -11,7 +11,7 @@ if (!isSupported) {
 }
 
 // Initialize services
-let productExtractor, queryParser, aiService;
+let productExtractor, queryParser, aiService, contextTracker;
 let servicesInitialized = false;
 
 // Wait for page to fully load before initializing
@@ -36,10 +36,25 @@ function initializeServices() {
       console.error('AIService class not available');
       return;
     }
+    if (typeof ContextTracker === 'undefined') {
+      console.error('ContextTracker class not available');
+      return;
+    }
 
     productExtractor = new ProductExtractor();
     queryParser = new QueryParser();
     aiService = new AIService();
+    contextTracker = new ContextTracker();
+    
+    // Initialize context tracker
+    contextTracker.initialize().then(() => {
+      console.log("ContextTracker initialized");
+      // Update page context
+      const productCount = productExtractor.hasProducts() ? 
+        document.querySelectorAll(productExtractor.selectors.productCards).length : 0;
+      contextTracker.updatePageContext(productExtractor.siteName, productCount);
+    });
+    
     servicesInitialized = true;
     console.log("All services initialized successfully");
   } catch (error) {
@@ -76,6 +91,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleCheckApiKey(sendResponse);
     return true;
   }
+
+  if (message.type === 'REQUEST_CONTEXT_UPDATE') {
+    handleContextUpdateRequest(sendResponse);
+    return true;
+  }
+
+  if (message.type === 'PREFERENCES_CLEARED') {
+    handlePreferencesCleared();
+    return true;
+  }
 });
 
 async function handleUserQuery(query, sendResponse) {
@@ -88,6 +113,12 @@ async function handleUserQuery(query, sendResponse) {
     // Parse the user query
     const parsedQuery = queryParser.parseQuery(query);
     console.log("Parsed query:", parsedQuery);
+
+    // Learn from this query for context-aware recommendations
+    if (contextTracker) {
+      await contextTracker.learnFromQuery(query, parsedQuery);
+      console.log("Learned from query:", query);
+    }
     
     // Check if we're on a product page first
     console.log("Checking current page URL:", window.location.href);
@@ -132,7 +163,11 @@ async function handleUserQuery(query, sendResponse) {
     
     // Use AI to analyze and recommend products
     try {
-      const aiRecommendations = await aiService.analyzeAndRecommend(query, filteredProducts, parsedQuery);
+      // Get contextual insights for AI analysis
+      const contextualInsights = contextTracker ? contextTracker.getContextualInsights() : null;
+      console.log("Contextual insights:", contextualInsights);
+      
+      const aiRecommendations = await aiService.analyzeAndRecommend(query, filteredProducts, parsedQuery, contextualInsights);
       
       // Send AI-powered recommendations
       chrome.runtime.sendMessage({
@@ -141,6 +176,7 @@ async function handleUserQuery(query, sendResponse) {
         summary: aiRecommendations.summary,
         buildSuggestion: aiRecommendations.buildSuggestion,
         alternatives: aiRecommendations.alternatives,
+        contextInsights: aiRecommendations.contextInsights,
         totalProducts: products.length,
         filteredProducts: filteredProducts.length
       });
@@ -307,6 +343,36 @@ async function handleCheckApiKey(sendResponse) {
     sendResponse({ hasApiKey: hasKey });
   } catch (error) {
     sendResponse({ hasApiKey: false, error: error.message });
+  }
+}
+
+async function handleContextUpdateRequest(sendResponse) {
+  try {
+    if (contextTracker) {
+      // Update product count
+      const productCount = productExtractor && productExtractor.hasProducts() ? 
+        document.querySelectorAll(productExtractor.selectors.productCards).length : 0;
+      contextTracker.updatePageContext(
+        productExtractor ? productExtractor.siteName : 'Unknown', 
+        productCount
+      );
+      
+      sendResponse({ 
+        context: contextTracker.context,
+        insights: contextTracker.getContextualInsights()
+      });
+    } else {
+      sendResponse({ error: 'ContextTracker not initialized' });
+    }
+  } catch (error) {
+    sendResponse({ error: error.message });
+  }
+}
+
+function handlePreferencesCleared() {
+  if (contextTracker) {
+    contextTracker.clearPreferences();
+    console.log("Preferences cleared from content script");
   }
 }
 

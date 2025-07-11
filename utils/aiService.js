@@ -25,7 +25,7 @@ class AIService {
     }
   }
 
-  async analyzeAndRecommend(userQuery, products, parsedQuery) {
+  async analyzeAndRecommend(userQuery, products, parsedQuery, contextualInsights = null) {
     if (!this.initialized) {
       const initResult = await this.initialize();
       if (!initResult) {
@@ -34,7 +34,7 @@ class AIService {
     }
 
     try {
-      const prompt = this.buildPrompt(userQuery, products, parsedQuery);
+      const prompt = this.buildContextAwarePrompt(userQuery, products, parsedQuery, contextualInsights);
       const response = await this.callGeminiAPI(prompt);
       return this.parseAIResponse(response, products);
     } catch (error) {
@@ -43,7 +43,7 @@ class AIService {
     }
   }
 
-  buildPrompt(userQuery, products, parsedQuery) {
+  buildContextAwarePrompt(userQuery, products, parsedQuery, contextualInsights) {
     const productsData = products.map((product, index) => ({
       id: index,
       title: product.title,
@@ -54,11 +54,35 @@ class AIService {
       site: product.site
     }));
 
-    return `You are an expert PC hardware salesman assistant. Analyze the user's query and recommend the best products from the available options.
+    // Build context section
+    let contextSection = '';
+    if (contextualInsights) {
+      contextSection = `
+LEARNED USER CONTEXT:
+- Previous Budget Preferences: ${contextualInsights.recommendedBudget ? 
+  `${contextualInsights.recommendedBudget.range} (confidence: ${contextualInsights.recommendedBudget.confidence}%)` : 'None'}
+- Preferred Categories: ${contextualInsights.preferredCategories.map(c => `${c.category} (${c.confidence}%)`).join(', ') || 'None'}
+- Preferred Brands: ${contextualInsights.preferredBrands.map(b => `${b.brand} (${b.confidence}%)`).join(', ') || 'None'}
+- Common Specs: ${contextualInsights.commonSpecs.map(s => `${s.type}: ${JSON.stringify(s.value)} (${s.confidence}%)`).join(', ') || 'None'}
+- Search Patterns: ${contextualInsights.searchPatterns.totalQueries} total queries, dominant purpose: ${contextualInsights.searchPatterns.dominantPurpose}
+- Recent Queries: ${contextualInsights.searchPatterns.recentQueries.join(', ') || 'None'}
 
-User Query: "${userQuery}"
+CONTEXT-AWARE INSTRUCTIONS:
+1. Consider the user's learned preferences when making recommendations
+2. If current query conflicts with learned preferences, gently suggest alternatives
+3. Use the confidence scores to weight your recommendations
+4. Mention how current products align with their typical preferences
+5. If this is a new category for them, provide extra guidance
+`;
+    }
 
-Parsed Requirements:
+    return `You are an expert PC hardware salesman assistant with access to the user's learned preferences and shopping history. Analyze the user's query and recommend the best products from the available options.
+
+${contextSection}
+
+Current User Query: "${userQuery}"
+
+Current Query Requirements:
 - Budget: ${parsedQuery.budget ? `₹${parsedQuery.budget.amount} (${parsedQuery.budget.operator})` : 'Not specified'}
 - Categories: ${parsedQuery.categories.length > 0 ? parsedQuery.categories.join(', ') : 'Not specified'}
 - Purpose: ${parsedQuery.purpose}
@@ -69,14 +93,13 @@ Available Products:
 ${JSON.stringify(productsData, null, 2)}
 
 Instructions:
-1. Analyze each product against the user's requirements
-2. Consider price, specifications, brand preferences, and purpose
-3. Score each product from 0-100 based on how well it matches the requirements
-4. Provide recommendations in order of relevance
-5. Explain why each product is recommended
-6. If building a complete PC, suggest compatible components
-7. Warn about any potential compatibility issues
-8. Consider price-to-performance ratio
+1. **Context-Aware Analysis**: Compare current query with learned preferences
+2. **Smart Recommendations**: Weight products based on both current needs and historical preferences
+3. **Preference Alignment**: Mention how recommendations align with user's typical choices
+4. **Budget Intelligence**: Consider their usual budget range vs current request
+5. **Brand Consistency**: Factor in their brand loyalty patterns
+6. **Compatibility Warnings**: Alert about departures from usual specifications
+7. **Learning Opportunities**: If exploring new categories, provide educational guidance
 
 Respond in JSON format:
 {
@@ -84,15 +107,18 @@ Respond in JSON format:
     {
       "productId": 0,
       "score": 95,
-      "reason": "Detailed explanation of why this product is recommended",
+      "reason": "Detailed explanation including context alignment",
       "pros": ["List of advantages"],
       "cons": ["List of disadvantages or limitations"],
-      "compatibility": "Notes about compatibility with other components"
+      "compatibility": "Compatibility notes",
+      "contextAlignment": "How this aligns with learned preferences",
+      "preferenceDeviation": "Any departures from usual preferences and why they might be good"
     }
   ],
-  "summary": "Overall recommendation summary and advice",
-  "buildSuggestion": "If applicable, suggest a complete build with total cost",
-  "alternatives": "Suggest alternatives if budget allows or if certain products are unavailable"
+  "summary": "Context-aware recommendation summary with preference insights",
+  "buildSuggestion": "Build suggestions considering their typical requirements",
+  "alternatives": "Alternative suggestions based on their preference patterns",
+  "contextInsights": "Insights about how this query fits their shopping patterns"
 }`;
   }
 

@@ -5,7 +5,8 @@
   "description": "AI-powered personal salesman to help you find PC parts and builds on e-commerce sites",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "sidePanel"
   ],
   "host_permissions": [
     "*://*.amazon.in/*",
@@ -16,6 +17,9 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": "Salesman bot.png"
+  },
+  "side_panel": {
+    "default_path": "sidebar.html"
   },
   "background": {
     "service_worker": "background.js"
@@ -28,7 +32,7 @@
         "*://*.flipkart.com/*",
         "*://www.walmart.com/*"
       ],
-      "js": ["utils/productExtractor.js", "utils/queryParser.js", "utils/aiService.js", "content.js"],
+      "js": ["utils/productExtractor.js", "utils/queryParser.js", "utils/aiService.js", "utils/contextTracker.js", "content.js"],
       "run_at": "document_end"
     }
   ],
