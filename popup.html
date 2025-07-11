@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Walmart Sparkathon - Virtual Salesman</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="container">
+    <div id="header" class="walmart-theme">
+      <img src="https://1000logos.net/wp-content/uploads/2017/05/Walmart-Logo-2008.png" alt="Walmart Logo" style="height:32px; margin-bottom:4px;">
+      <h2>Walmart Sparkathon Salesman</h2>
+      <p>AI Shopping Assistant <span class="sparkathon-badge">Sparkathon 2025</span></p>
+      <p class="walmart-tagline">Reimagining Customer Experience</p>
+    </div>
+    
+    <div id="apiKeySection" style="display: block;">
+      <div class="api-key-setup">
+        <label for="apiKeyInput">Gemini API Key:</label>
+        <input id="apiKeyInput" type="password" placeholder="Enter your API key">
+        <button id="apiKeyBtn">Setup AI</button>
+        <p class="help-text">
+          Get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a><br>
+          <span style="color:#0071ce;font-weight:600;">Now works on Walmart.com!</span>
+        </p>
+      </div>
+    </div>
+    
+    <div id="chatbox">
+      <div id="messages">
+        <div class="bot">Loading Walmart Sparkathon Salesman...</div>
+      </div>
+      <div id="inputSection">
+        <input id="userInput" type="text" placeholder="E.g. gaming laptop under $700">
+        <button id="sendBtn">Send</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
