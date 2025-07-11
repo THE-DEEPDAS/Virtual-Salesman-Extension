@@ -4,8 +4,15 @@ console.log("SalesmanBot background script loaded");
 chrome.runtime.onInstalled.addListener(() => {
   console.log("SalesmanBot extension installed successfully");
   
-  // Enable side panel for the extension
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+  // Initialize default preferences
+  chrome.storage.sync.set({
+    userPreferences: {
+      budget: { ranges: {}, confidence: 0 },
+      categories: { interests: {}, frequency: {} },
+      brands: { preferences: {}, loyalty: {} },
+      specs: { requirements: {}, importance: {} }
+    }
+  });
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -27,6 +34,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("Context updated");
   }
   
+  if (message.type === 'CONTEXT_BROADCAST') {
+    // Forward context broadcasts to all extension components
+    console.log("Broadcasting context update");
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {
+          type: 'CONTEXT_UPDATED',
+          context: message.data.context,
+          preferences: message.data.preferences,
+          insights: message.data.insights
+        }).catch(() => {
+          // Ignore errors for tabs that don't have the content script
+        });
+      });
+    });
+  }
+  
   return true;
 });
 
@@ -40,11 +64,6 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
   if (changes.currentContext) {
     console.log("Current context changed");
   }
-});
-
-// Handle action clicks to open sidebar
-chrome.action.onClicked.addListener((tab) => {
-  chrome.sidePanel.open({ tabId: tab.id });
 });
 
 console.log("Background script setup complete");

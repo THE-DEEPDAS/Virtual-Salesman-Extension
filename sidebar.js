@@ -1,3 +1,52 @@
+// Safe DOM manipulation utilities
+function createSafeElement(tag, className = '', textContent = '') {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (textContent) element.textContent = textContent;
+    return element;
+}
+
+function clearAndAppendSafe(container, elements) {
+    // Clear container safely
+    while (container.firstChild) {
+        container.removeChild(container.firstChild);
+    }
+    
+    // Append new elements
+    if (Array.isArray(elements)) {
+        elements.forEach(el => {
+            if (el instanceof Node) {
+                container.appendChild(el);
+            }
+        });
+    } else if (elements instanceof Node) {
+        container.appendChild(elements);
+    }
+}
+
+function createNoDataElement(message = 'No data yet') {
+    return createSafeElement('div', 'no-data', message);
+}
+
+function createPreferenceItem(label, value, confidence = 0) {
+    const item = createSafeElement('div', 'preference-item');
+    
+    const labelSpan = createSafeElement('span', '', label);
+    const valueSpan = createSafeElement('span', 'preference-value', value);
+    
+    // Create confidence bar
+    const confidenceBar = createSafeElement('div', 'confidence-bar');
+    const confidenceFill = createSafeElement('div', 'confidence-fill');
+    confidenceFill.style.width = `${confidence}%`;
+    confidenceBar.appendChild(confidenceFill);
+    
+    item.appendChild(labelSpan);
+    item.appendChild(valueSpan);
+    item.appendChild(confidenceBar);
+    
+    return item;
+}
+
 class SidebarManager {
     constructor() {
         this.preferences = null;
@@ -91,29 +140,24 @@ class SidebarManager {
 
         const budgetData = this.preferences.budget;
         if (!budgetData || Object.keys(budgetData).length === 0) {
-            container.innerHTML = '<div class="no-data">No budget data yet</div>';
+            clearAndAppendSafe(container, createNoDataElement('No budget data yet'));
             return;
         }
 
-        let html = '';
+        const elements = [];
         Object.entries(budgetData)
             .sort(([,a], [,b]) => b.confidence - a.confidence)
             .slice(0, 3)
             .forEach(([range, data]) => {
-                html += `
-                    <div class="preference-item">
-                        <span>${range}</span>
-                        <div style="display: flex; align-items: center;">
-                            <span class="preference-value">${data.count}x</span>
-                            <div class="confidence-bar">
-                                <div class="confidence-fill" style="width: ${data.confidence}%"></div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                const item = createPreferenceItem(
+                    range,
+                    `${data.count}x`,
+                    data.confidence
+                );
+                elements.push(item);
             });
 
-        container.innerHTML = html;
+        clearAndAppendSafe(container, elements);
     }
 
     updateCategoryPreferences() {
@@ -122,29 +166,24 @@ class SidebarManager {
 
         const categoryData = this.preferences.categories;
         if (!categoryData || Object.keys(categoryData).length === 0) {
-            container.innerHTML = '<div class="no-data">No category data yet</div>';
+            clearAndAppendSafe(container, createNoDataElement('No category data yet'));
             return;
         }
 
-        let html = '';
+        const elements = [];
         Object.entries(categoryData)
             .sort(([,a], [,b]) => b.confidence - a.confidence)
             .slice(0, 4)
             .forEach(([category, data]) => {
-                html += `
-                    <div class="preference-item">
-                        <span>${category.replace('_', ' ')}</span>
-                        <div style="display: flex; align-items: center;">
-                            <span class="preference-value">${data.count}x</span>
-                            <div class="confidence-bar">
-                                <div class="confidence-fill" style="width: ${data.confidence}%"></div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                const item = createPreferenceItem(
+                    category.replace('_', ' '),
+                    `${data.count}x`,
+                    data.confidence
+                );
+                elements.push(item);
             });
 
-        container.innerHTML = html;
+        clearAndAppendSafe(container, elements);
     }
 
     updateBrandPreferences() {
@@ -153,29 +192,24 @@ class SidebarManager {
 
         const brandData = this.preferences.brands;
         if (!brandData || Object.keys(brandData).length === 0) {
-            container.innerHTML = '<div class="no-data">No brand data yet</div>';
+            clearAndAppendSafe(container, createNoDataElement('No brand data yet'));
             return;
         }
 
-        let html = '';
+        const elements = [];
         Object.entries(brandData)
             .sort(([,a], [,b]) => b.confidence - a.confidence)
             .slice(0, 4)
             .forEach(([brand, data]) => {
-                html += `
-                    <div class="preference-item">
-                        <span>${brand.toUpperCase()}</span>
-                        <div style="display: flex; align-items: center;">
-                            <span class="preference-value">${data.count}x</span>
-                            <div class="confidence-bar">
-                                <div class="confidence-fill" style="width: ${data.confidence}%"></div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                const item = createPreferenceItem(
+                    brand.toUpperCase(),
+                    `${data.count}x`,
+                    data.confidence
+                );
+                elements.push(item);
             });
 
-        container.innerHTML = html;
+        clearAndAppendSafe(container, elements);
     }
 
     updateSpecPreferences() {
@@ -184,39 +218,76 @@ class SidebarManager {
 
         const specData = this.preferences.specs;
         if (!specData || Object.keys(specData).length === 0) {
-            container.innerHTML = '<div class="no-data">No spec data yet</div>';
+            clearAndAppendSafe(container, createNoDataElement('No spec data yet'));
             return;
         }
 
-        let html = '';
+        const elements = [];
         Object.entries(specData)
             .sort(([,a], [,b]) => b.confidence - a.confidence)
             .slice(0, 4)
             .forEach(([spec, data]) => {
-                html += `
-                    <div class="preference-item">
-                        <span>${spec}</span>
-                        <div style="display: flex; align-items: center;">
-                            <span class="preference-value">${data.value}</span>
-                            <div class="confidence-bar">
-                                <div class="confidence-fill" style="width: ${data.confidence}%"></div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                const item = createPreferenceItem(
+                    spec,
+                    data.value,
+                    data.confidence
+                );
+                elements.push(item);
             });
 
-        container.innerHTML = html;
+        clearAndAppendSafe(container, elements);
     }
 
     updateCurrentContext() {
         const pageEl = document.getElementById('currentPage');
         const countEl = document.getElementById('productCount');
         const queryEl = document.getElementById('lastQuery');
-
+        
+        // Update basic context
         if (pageEl) pageEl.textContent = this.context.currentPage || 'Unknown';
         if (countEl) countEl.textContent = this.context.productCount || '0';
         if (queryEl) queryEl.textContent = this.context.lastQuery || 'None';
+        
+        // Update session info if available
+        this.updateSessionInfo();
+        this.updateBrowsingHistory();
+    }
+    
+    updateSessionInfo() {
+        const sessionQueriesEl = document.getElementById('sessionQueries');
+        if (sessionQueriesEl && this.context.sessionQueries) {
+            // Show last 3 queries
+            const recentQueries = this.context.sessionQueries.slice(-3);
+            if (recentQueries.length > 0) {
+                const queryElements = recentQueries.map(query => 
+                    createSafeElement('div', 'query-item', `"${query}"`)
+                );
+                clearAndAppendSafe(sessionQueriesEl, queryElements);
+            } else {
+                clearAndAppendSafe(sessionQueriesEl, createNoDataElement('No queries yet'));
+            }
+        }
+    }
+    
+    updateBrowsingHistory() {
+        const browsingEl = document.getElementById('browsingHistory');
+        if (browsingEl && this.context.browsedProducts) {
+            // Show last 3 browsed products
+            const recentProducts = this.context.browsedProducts.slice(-3);
+            if (recentProducts.length > 0) {
+                const productElements = recentProducts.map(product => {
+                    const item = createSafeElement('div', 'browsed-item');
+                    const title = createSafeElement('div', 'product-title', product.title || 'Unknown Product');
+                    const price = createSafeElement('div', 'product-price', product.price || 'Price not available');
+                    item.appendChild(title);
+                    item.appendChild(price);
+                    return item;
+                });
+                clearAndAppendSafe(browsingEl, productElements);
+            } else {
+                clearAndAppendSafe(browsingEl, createNoDataElement('No browsing history'));
+            }
+        }
     }
 
     async clearPreferences() {
@@ -251,6 +322,27 @@ class SidebarManager {
         setInterval(() => {
             this.requestContextUpdate();
         }, 5000);
+        
+        // Also listen for storage changes to update immediately when preferences change
+        this.setupStorageListener();
+    }
+    
+    setupStorageListener() {
+        // Listen for storage changes from other parts of the extension
+        chrome.storage.onChanged.addListener((changes, namespace) => {
+            if (namespace === 'local') {
+                if (changes.userPreferences) {
+                    this.preferences = changes.userPreferences.newValue || this.preferences;
+                    this.updateDisplay();
+                    console.log('Preferences updated from storage:', this.preferences);
+                }
+                if (changes.currentContext) {
+                    this.context = changes.currentContext.newValue || this.context;
+                    this.updateDisplay();
+                    console.log('Context updated from storage:', this.context);
+                }
+            }
+        });
     }
 
     requestContextUpdate() {

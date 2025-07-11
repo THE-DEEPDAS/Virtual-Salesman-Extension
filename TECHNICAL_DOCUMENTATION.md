@@ -14,7 +14,16 @@
 
 ## 🚀 Project Overview
 
-**SalesmanBot** is an intelligent Chrome extension that acts as a personal AI-powered shopping assistant for PC components and builds on e-commerce platforms (Amazon & Flipkart). It combines advanced web scraping, natural language processing, machine learning, and AI-powered recommendations to provide context-aware shopping assistance.
+**SalesmanBot** is an intelligent Chrome extension that acts as a personal AI-powered shopping assistant for PC components and builds on e-commerce platforms (Amazon, Flipkart, and **Walmart** - primary focus for Walmart Sparkathon 2025). It combines advanced web scraping, natural language processing, machine learning, and AI-powered recommendations to provide context-aware shopping assistance.
+
+### 🎯 Walmart Sparkathon 2025 Focus
+This extension was specifically designed for the **Walmart Sparkathon 2025** with the theme "Reimagining Customer Experience." Key innovations include:
+
+- **Walmart-Optimized Product Extraction**: Advanced selectors specifically tuned for Walmart.com
+- **Context-Aware AI Recommendations**: Learning user preferences to provide personalized suggestions
+- **Real-Time Preference Tracking**: Dynamic adaptation to user shopping patterns
+- **Modern UI/UX**: Beautiful, responsive interface aligned with Walmart's design principles
+- **Cross-Platform Compatibility**: Works seamlessly on Chrome and Firefox
 
 ### Key Capabilities:
 - **Real-time Product Extraction**: Advanced CSS selector-based scraping with fallback mechanisms

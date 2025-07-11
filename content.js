@@ -53,6 +53,9 @@ function initializeServices() {
       const productCount = productExtractor.hasProducts() ? 
         document.querySelectorAll(productExtractor.selectors.productCards).length : 0;
       contextTracker.updatePageContext(productExtractor.siteName, productCount);
+      
+      // Broadcast initial context to sidebar
+      broadcastContextUpdate();
     });
     
     servicesInitialized = true;
@@ -61,6 +64,25 @@ function initializeServices() {
     console.error("Failed to initialize services:", error);
     servicesInitialized = false;
   }
+}
+
+// Function to broadcast context updates to sidebar
+function broadcastContextUpdate() {
+  if (!contextTracker) return;
+  
+  const contextData = {
+    context: contextTracker.context,
+    preferences: contextTracker.preferences,
+    insights: contextTracker.getContextualInsights()
+  };
+  
+  // Send to runtime for sidebar to pick up
+  chrome.runtime.sendMessage({
+    type: 'CONTEXT_BROADCAST',
+    data: contextData
+  }).catch(error => {
+    console.log('Runtime not ready for context broadcast:', error);
+  });
 }
 
 // Message listener for popup communication
@@ -118,6 +140,9 @@ async function handleUserQuery(query, sendResponse) {
     if (contextTracker) {
       await contextTracker.learnFromQuery(query, parsedQuery);
       console.log("Learned from query:", query);
+      
+      // Broadcast context update after learning
+      broadcastContextUpdate();
     }
     
     // Check if we're on a product page first

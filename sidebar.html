@@ -135,6 +135,34 @@
             font-size: 12px;
         }
 
+        .query-item {
+            background: rgba(255,255,255,0.1);
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin: 4px 0;
+            font-size: 11px;
+            border-left: 3px solid #ffc220;
+        }
+
+        .browsed-item {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin: 4px 0;
+            font-size: 11px;
+            border-left: 3px solid #4CAF50;
+        }
+
+        .product-title {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .product-price {
+            opacity: 0.8;
+            font-size: 10px;
+        }
+
         .toggle-btn {
             position: fixed;
             top: 10px;
@@ -196,6 +224,20 @@
                 <div class="context-item">
                     <strong>Last Query:</strong> <span id="lastQuery">None</span>
                 </div>
+            </div>
+        </div>
+
+        <div class="context-section">
+            <h3>🔍 Recent Queries</h3>
+            <div id="sessionQueries" class="no-data">
+                No queries yet
+            </div>
+        </div>
+
+        <div class="context-section">
+            <h3>👀 Browsing History</h3>
+            <div id="browsingHistory" class="no-data">
+                No browsing history
             </div>
         </div>
 

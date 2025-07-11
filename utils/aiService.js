@@ -180,14 +180,19 @@ Respond in JSON format:
         reason: rec.reason,
         pros: rec.pros || [],
         cons: rec.cons || [],
-        compatibility: rec.compatibility || ''
+        compatibility: rec.compatibility || '',
+        contextAlignment: rec.contextAlignment || '',
+        preferenceDeviation: rec.preferenceDeviation || ''
       }));
 
       return {
         recommendations: recommendations,
         summary: aiAnalysis.summary || '',
         buildSuggestion: aiAnalysis.buildSuggestion || '',
-        alternatives: aiAnalysis.alternatives || ''
+        alternatives: aiAnalysis.alternatives || '',
+        contextInsights: aiAnalysis.contextInsights || '',
+        totalProducts: products.length,
+        filteredProducts: recommendations.length
       };
     } catch (error) {
       console.error('Failed to parse AI response:', error);

@@ -5,9 +5,13 @@
   "description": "AI-powered personal salesman to help you find PC parts and builds on e-commerce sites",
   "permissions": [
     "activeTab",
-    "storage",
-    "sidePanel"
+    "storage"
   ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "salesmanbot@aiassistant.extension"
+    }
+  },
   "host_permissions": [
     "*://*.amazon.in/*",
     "*://*.amazon.com/*",
@@ -17,9 +21,6 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": "Salesman bot.png"
-  },
-  "side_panel": {
-    "default_path": "sidebar.html"
   },
   "background": {
     "service_worker": "background.js"

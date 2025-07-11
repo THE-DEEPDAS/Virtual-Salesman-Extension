@@ -4,6 +4,61 @@ document.addEventListener('DOMContentLoaded', initializePopup);
 // DOM elements - will be set after DOM loads
 let sendBtn, userInput, messagesDiv, apiKeyBtn, apiKeyInput, apiKeySection;
 
+// Safe HTML sanitization function
+function sanitizeHTML(html) {
+  const tempDiv = document.createElement('div');
+  tempDiv.textContent = html;
+  return tempDiv.textContent; // Return text content, not innerHTML
+}
+
+// Safe HTML creation for trusted content
+function createSafeHTML(htmlString) {
+  // Only allow specific safe tags for message content
+  const allowedTags = ['div', 'span', 'strong', 'em', 'br', 'a'];
+  const allowedAttributes = ['href', 'target', 'class'];
+  
+  // For now, we'll create elements programmatically for safety
+  const container = document.createElement('div');
+  
+  // Check if content contains HTML tags
+  if (htmlString.includes('<') && htmlString.includes('>')) {
+    // Parse and create safe elements
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, 'text/html');
+    
+    // Copy only safe content
+    const walker = document.createTreeWalker(
+      doc.body,
+      NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
+    
+    let node;
+    while (node = walker.nextNode()) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        container.appendChild(document.createTextNode(node.textContent));
+      } else if (node.nodeType === Node.ELEMENT_NODE && allowedTags.includes(node.tagName.toLowerCase())) {
+        const safeElement = document.createElement(node.tagName.toLowerCase());
+        
+        // Copy safe attributes
+        for (const attr of node.attributes) {
+          if (allowedAttributes.includes(attr.name.toLowerCase())) {
+            safeElement.setAttribute(attr.name, attr.value);
+          }
+        }
+        
+        container.appendChild(safeElement);
+      }
+    }
+  } else {
+    // Plain text content
+    container.textContent = htmlString;
+  }
+  
+  return container;
+}
+
 async function initializePopup() {
   console.log('Initializing popup...');
   
@@ -28,8 +83,15 @@ async function initializePopup() {
     // Check if all required elements exist
     if (!sendBtn || !userInput || !messagesDiv) {
       console.error('Required DOM elements not found');
-      // Try to show error in document body
-      document.body.innerHTML = '<div style="padding: 20px; color: red;">Error: Required DOM elements not found</div>';
+      // Safe DOM manipulation instead of innerHTML
+      const errorDiv = document.createElement('div');
+      errorDiv.style.padding = '20px';
+      errorDiv.style.color = 'red';
+      errorDiv.textContent = 'Error: Required DOM elements not found';
+      while (document.body.firstChild) {
+        document.body.removeChild(document.body.firstChild);
+      }
+      document.body.appendChild(errorDiv);
       return;
     }
     
@@ -60,7 +122,15 @@ async function initializePopup() {
     
   } catch (error) {
     console.error('Error during popup initialization:', error);
-    document.body.innerHTML = '<div style="padding: 20px; color: red;">Error: ' + error.message + '</div>';
+    // Safe DOM manipulation instead of innerHTML
+    const errorDiv = document.createElement('div');
+    errorDiv.style.padding = '20px';
+    errorDiv.style.color = 'red';
+    errorDiv.textContent = 'Error: ' + error.message;
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+    document.body.appendChild(errorDiv);
   }
 }
 
@@ -298,7 +368,17 @@ function addMessage(sender, content) {
   const messageDiv = document.createElement('div');
   messageDiv.id = messageId;
   messageDiv.className = sender;
-  messageDiv.innerHTML = content;
+  
+  // Safe content handling
+  if (typeof content === 'string' && (content.includes('<') && content.includes('>'))) {
+    // For HTML content, create safe elements
+    const safeContent = createSafeHTML(content);
+    messageDiv.appendChild(safeContent);
+  } else {
+    // For plain text
+    messageDiv.textContent = content;
+  }
+  
   messagesDiv.appendChild(messageDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
   return messageId;
