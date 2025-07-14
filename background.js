@@ -19,20 +19,33 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Background received message:", message);
   
+  // Ensure we always send a response to prevent "Receiving end does not exist" errors
+  const handleResponse = (response) => {
+    try {
+      sendResponse(response);
+    } catch (error) {
+      console.log("Response already sent or connection closed:", error.message);
+    }
+  };
+  
   if (message.type === 'PAGE_ANALYSIS_COMPLETE') {
     console.log("Page analysis completed");
+    handleResponse({ status: 'acknowledged' });
   }
   
   if (message.type === 'EXTENSION_ERROR') {
     console.error("Extension error:", message.error);
+    handleResponse({ status: 'error_logged' });
   }
   
   if (message.type === 'PREFERENCES_UPDATED') {
     console.log("User preferences updated");
+    handleResponse({ status: 'preferences_updated' });
   }
   
   if (message.type === 'CONTEXT_UPDATED') {
     console.log("Context updated");
+    handleResponse({ status: 'context_updated' });
   }
   
   if (message.type === 'CONTEXT_BROADCAST') {
@@ -50,13 +63,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
       });
     });
+    handleResponse({ status: 'broadcast_sent' });
   }
   
   if (message.type === 'OPEN_PREFERENCES') {
     // Open preferences sidebar when requested
     console.log("Opening preferences sidebar");
     if (sender.tab) {
-      chrome.sidePanel.open({ tabId: sender.tab.id });
+      try {
+        chrome.sidePanel.open({ tabId: sender.tab.id });
+        handleResponse({ status: 'sidebar_opened' });
+      } catch (error) {
+        console.error("Failed to open sidebar:", error);
+        handleResponse({ status: 'sidebar_error', error: error.message });
+      }
+    } else {
+      handleResponse({ status: 'no_tab_info' });
     }
   }
   

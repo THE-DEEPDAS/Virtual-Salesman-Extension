@@ -293,9 +293,16 @@ function sendMessageToContentScript(message) {
         return;
       }
       
+      // Add timeout to prevent hanging
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Request timed out. Please ensure you\'re on a supported page (Walmart, Amazon, or Flipkart).'));
+      }, 10000);
+      
       chrome.tabs.sendMessage(tabs[0].id, message, (response) => {
+        clearTimeout(timeoutId);
+        
         if (chrome.runtime.lastError) {
-          reject(new Error('Unable to connect to the content script. Please ensure you\'re on a supported page (Walmart, Amazon, or Flipkart).'));
+          reject(new Error('Unable to connect to the content script. Please ensure you\'re on a supported page (Walmart, Amazon, or Flipkart) and refresh the page if needed.'));
         } else {
           resolve(response);
         }

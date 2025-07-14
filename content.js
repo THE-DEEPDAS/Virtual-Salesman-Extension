@@ -18,7 +18,8 @@ let servicesInitialized = false;
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeServices);
 } else {
-  initializeServices();
+  // Add delay for dynamic content on complex sites like Walmart
+  setTimeout(initializeServices, 1000);
 }
 
 function initializeServices() {
@@ -53,6 +54,9 @@ function initializeServices() {
       const productCount = productExtractor.hasProducts() ? 
         document.querySelectorAll(productExtractor.selectors.productCards).length : 0;
       contextTracker.updatePageContext(productExtractor.siteName, productCount);
+      
+      // Broadcast initial context to sidebar
+      broadcastContextUpdate();
     });
     
     servicesInitialized = true;
@@ -63,14 +67,41 @@ function initializeServices() {
   }
 }
 
-// Message listener for popup communication
+// Function to broadcast context updates to sidebar
+function broadcastContextUpdate() {
+  if (!contextTracker) return;
+  
+  const contextData = {
+    context: contextTracker.context,
+    preferences: contextTracker.preferences,
+    insights: contextTracker.getContextualInsights()
+  };
+  
+  // Send to runtime for sidebar to pick up
+  chrome.runtime.sendMessage({
+    type: 'CONTEXT_BROADCAST',
+    data: contextData
+  }).catch(error => {
+    console.log('Runtime not ready for context broadcast:', error);
+  });
+}
+
+// Enhanced message listener with better error handling
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Message received in content script:", message);
   
+  // Always respond to prevent "Receiving end does not exist" errors
+  const safeResponse = (response) => {
+    try {
+      sendResponse(response);
+    } catch (error) {
+      console.log("Response already sent or connection closed:", error.message);
+    }
+  };
   
   // Check if services are initialized
   if (!servicesInitialized && message.type === 'USER_QUERY') {
-    sendResponse({ 
+    safeResponse({ 
       status: 'error', 
       message: 'Content script services not ready. Please refresh the page and try again.' 
     });
@@ -78,29 +109,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   
   if (message.type === 'USER_QUERY') {
-    handleUserQuery(message.query, sendResponse);
+    handleUserQuery(message.query, safeResponse);
     return true; // Keep the message channel open for async response
   }
   
   if (message.type === 'SET_API_KEY') {
-    handleSetApiKey(message.apiKey, sendResponse);
+    handleSetApiKey(message.apiKey, safeResponse);
     return true;
   }
   
   if (message.type === 'CHECK_API_KEY') {
-    handleCheckApiKey(sendResponse);
+    handleCheckApiKey(safeResponse);
     return true;
   }
 
   if (message.type === 'REQUEST_CONTEXT_UPDATE') {
-    handleContextUpdateRequest(sendResponse);
+    handleContextUpdateRequest(safeResponse);
     return true;
   }
 
   if (message.type === 'PREFERENCES_CLEARED') {
     handlePreferencesCleared();
+    safeResponse({ status: 'preferences_cleared' });
     return true;
   }
+  
+  // Default response for unhandled messages
+  safeResponse({ status: 'message_received' });
+  return true;
 });
 
 async function handleUserQuery(query, sendResponse) {
@@ -118,6 +154,9 @@ async function handleUserQuery(query, sendResponse) {
     if (contextTracker) {
       await contextTracker.learnFromQuery(query, parsedQuery);
       console.log("Learned from query:", query);
+      
+      // Broadcast context update after learning
+      broadcastContextUpdate();
     }
     
     // Check if we're on a product page first
@@ -134,6 +173,8 @@ async function handleUserQuery(query, sendResponse) {
       chrome.runtime.sendMessage({
         type: 'ERROR',
         message: 'No products found on this page. Please navigate to a product search or listing page.'
+      }).catch(error => {
+        console.log("Failed to send error message:", error);
       });
       return;
     }
@@ -148,6 +189,8 @@ async function handleUserQuery(query, sendResponse) {
       chrome.runtime.sendMessage({
         type: 'ERROR',
         message: 'No products could be extracted from this page. Please try on a product listing page.'
+      }).catch(error => {
+        console.log("Failed to send error message:", error);
       });
       return;
     }
@@ -179,6 +222,8 @@ async function handleUserQuery(query, sendResponse) {
         contextInsights: aiRecommendations.contextInsights,
         totalProducts: products.length,
         filteredProducts: filteredProducts.length
+      }).catch(error => {
+        console.log("Failed to send AI recommendations:", error);
       });
       
     } catch (aiError) {
@@ -200,6 +245,8 @@ async function handleUserQuery(query, sendResponse) {
         message: aiError.message.includes('API key') ? 
           'AI analysis unavailable. Please set up your Gemini API key in the extension popup.' :
           'Basic filtering applied. Set up AI for better recommendations.\n\n<b>Tip:</b> For best results, use this extension on <b>Walmart.com</b> product search or category pages!'
+      }).catch(error => {
+        console.log("Failed to send basic recommendations:", error);
       });
     }
     
@@ -208,10 +255,13 @@ async function handleUserQuery(query, sendResponse) {
     chrome.runtime.sendMessage({
       type: 'ERROR',
       message: `Error processing your request: ${error.message}`
+    }).catch(err => {
+      console.log("Failed to send error message:", err);
     });
   }
 }
 
+// Legacy functions for backward compatibility (simplified versions)
 function filterProducts(products, parsedQuery) {
   return products.filter(product => {
     // Budget filter
@@ -241,24 +291,6 @@ function filterProducts(products, parsedQuery) {
       }
     }
     
-    // Brand filter
-    if (parsedQuery.brands.length > 0) {
-      const productMatches = parsedQuery.brands.some(brand => 
-        product.title.toLowerCase().includes(brand)
-      );
-      if (!productMatches) {
-        return false;
-      }
-    }
-    
-    // Specs filter
-    if (parsedQuery.specs.ram) {
-      const productRam = extractRAMSize(product.title);
-      if (productRam > 0 && productRam < parsedQuery.specs.ram) {
-        return false;
-      }
-    }
-    
     return true;
   });
 }
@@ -267,11 +299,6 @@ function extractNumericPrice(priceString) {
   if (!priceString) return 0;
   const match = priceString.match(/[\d,]+(?:\.\d{2})?/);
   return match ? parseInt(match[0].replace(/,/g, '')) : 0;
-}
-
-function extractRAMSize(title) {
-  const match = title.match(/(\d+)\s*gb\s*(?:ram|memory|ddr)/i);
-  return match ? parseInt(match[1]) : 0;
 }
 
 function calculateBasicScore(product, parsedQuery) {
@@ -285,28 +312,6 @@ function calculateBasicScore(product, parsedQuery) {
     }
   }
   
-  // Category match bonus
-  if (parsedQuery.categories.includes(product.category)) {
-    score += 20;
-  }
-  
-  // Brand match bonus
-  if (parsedQuery.brands.some(brand => 
-    product.title.toLowerCase().includes(brand))) {
-    score += 15;
-  }
-  
-  // Price appropriateness
-  if (parsedQuery.budget) {
-    const productPrice = extractNumericPrice(product.price);
-    if (productPrice > 0) {
-      const budgetUtilization = productPrice / parsedQuery.budget.amount;
-      if (budgetUtilization >= 0.7 && budgetUtilization <= 1.0) {
-        score += 10; // Good budget utilization
-      }
-    }
-  }
-  
   return Math.min(score, 100);
 }
 
@@ -317,15 +322,7 @@ function getProductPros(product) {
     pros.push('High rating');
   }
   
-  if (product.specs && Object.keys(product.specs).length > 0) {
-    pros.push('Detailed specifications available');
-  }
-  
-  if (product.category && product.category !== 'other') {
-    pros.push('Properly categorized');
-  }
-  
-  return pros.length > 0 ? pros : ['Available on ' + product.site];
+  return pros.length > 0 ? pros : ['Available on ' + (product.site || 'this site')];
 }
 
 async function handleSetApiKey(apiKey, sendResponse) {
@@ -376,55 +373,13 @@ function handlePreferencesCleared() {
   }
 }
 
-// Legacy functions for backward compatibility
-function scrapeCurrentPage() {
-  if (productExtractor) {
-    return productExtractor.extractProducts();
-  }
-  return [];
-}
-
-function parseUserQuery(query) {
-  if (queryParser) {
-    return queryParser.parseQuery(query);
-  }
-  return { budget: null, categories: [], specs: {}, keywords: [] };
-}
-
-function matchProduct(product, parsedQuery) {
-  const title = product.title.toLowerCase();
-  const priceNum = Number((product.price || "0").replace(/[^\d]/g, ""));
-
-  if (parsedQuery.budget && priceNum > parsedQuery.budget) return false;
-
-  let score = 0;
-  if (parsedQuery.keywords) {
-    parsedQuery.keywords.forEach(k => {
-      if (title.includes(k)) score++;
-    });
-  }
-
-  return score > 0;
-}
-
-// Function to check if current page is supported
-function isPageSupported() {
-  const url = window.location.href;
-  return url.includes('amazon') || url.includes('flipkart');
-}
-
-// Function to check page readiness
-function isPageReady() {
-  return productExtractor && productExtractor.hasProducts();
-}
-
 // Export for testing
 if (typeof window !== 'undefined') {
   window.salesmanBotContent = {
     productExtractor,
     queryParser,
     aiService,
-    isPageSupported,
-    isPageReady
+    isSupported,
+    servicesInitialized
   };
 }

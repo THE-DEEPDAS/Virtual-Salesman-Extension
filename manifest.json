@@ -24,16 +24,20 @@
   "background": {
     "service_worker": "background.js"
   },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  },
   "content_scripts": [
     {
       "matches": [
         "*://*.amazon.in/*",
-        "*://*.amazon.com/*",
+        "*://*.amazon.com/*", 
         "*://*.flipkart.com/*",
         "*://www.walmart.com/*"
       ],
       "js": ["utils/productExtractor.js", "utils/queryParser.js", "utils/aiService.js", "utils/contextTracker.js", "content.js"],
-      "run_at": "document_end"
+      "run_at": "document_end",
+      "all_frames": false
     }
   ],
   "web_accessible_resources": [
