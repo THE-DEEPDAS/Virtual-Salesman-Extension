@@ -14,6 +14,68 @@ chrome.runtime.onInstalled.addListener(() => {
       purposes: {}
     }
   });
+
+  // Inject content script into all open tabs
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach(tab => {
+      if (tab.id && tab.url && tab.url.startsWith("http")) {
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["content.js"]
+        }, () => {
+          if (chrome.runtime.lastError) {
+            console.warn(`Failed to inject content script into tab ${tab.id}:`, chrome.runtime.lastError.message);
+          } else {
+            console.log(`Content script injected into tab ${tab.id}`);
+          }
+        });
+
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["utils/productExtractor.js"]
+        }, () => {
+          if (chrome.runtime.lastError) {
+            console.warn(`Failed to inject productExtractor.js into tab ${tab.id}:`, chrome.runtime.lastError.message);
+          } else {
+            console.log(`productExtractor.js injected into tab ${tab.id}`);
+          }
+        });
+
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["utils/queryParser.js"]
+        }, () => {
+          if (chrome.runtime.lastError) {
+            console.warn(`Failed to inject queryParser.js into tab ${tab.id}:`, chrome.runtime.lastError.message);
+          } else {
+            console.log(`queryParser.js injected into tab ${tab.id}`);
+          }
+        });
+
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["utils/aiService.js"]
+        }, () => {
+          if (chrome.runtime.lastError) {
+            console.warn(`Failed to inject aiService.js into tab ${tab.id}:`, chrome.runtime.lastError.message);
+          } else {
+            console.log(`aiService.js injected into tab ${tab.id}`);
+          }
+        });
+
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["utils/contextTracker.js"]
+        }, () => {
+          if (chrome.runtime.lastError) {
+            console.warn(`Failed to inject contextTracker.js into tab ${tab.id}:`, chrome.runtime.lastError.message);
+          } else {
+            console.log(`contextTracker.js injected into tab ${tab.id}`);
+          }
+        });
+      }
+    });
+  });
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

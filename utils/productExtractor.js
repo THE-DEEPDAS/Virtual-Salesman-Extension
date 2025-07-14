@@ -522,3 +522,6 @@ class ProductExtractor {
 
 // Make it available globally
 window.ProductExtractor = ProductExtractor;
+
+console.log("ProductExtractor script executed");
+console.log("ProductExtractor loaded successfully");

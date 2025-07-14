@@ -15,11 +15,65 @@ let productExtractor, queryParser, aiService, contextTracker;
 let servicesInitialized = false;
 
 // Wait for page to fully load before initializing
+function waitForDOMReady(callback, retries = 5, delay = 1000) {
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    callback();
+  } else if (retries > 0) {
+    console.log(`DOM not ready, retrying in ${delay}ms... (${retries} retries left)`);
+    setTimeout(() => waitForDOMReady(callback, retries - 1, delay), delay);
+  } else {
+    console.error('Failed to initialize services: DOM not ready after multiple retries');
+  }
+}
+
+function waitForProductExtractor(callback, retries = 5, delay = 1000) {
+  if (typeof ProductExtractor !== 'undefined') {
+    callback();
+  } else if (retries > 0) {
+    console.log(`ProductExtractor not available, retrying in ${delay}ms... (${retries} retries left)`);
+    setTimeout(() => waitForProductExtractor(callback, retries - 1, delay), delay);
+  } else {
+    console.error('Failed to initialize services: ProductExtractor not available after multiple retries');
+  }
+}
+
+function waitForAIService(callback, retries = 5, delay = 1000) {
+  if (typeof AIService !== 'undefined') {
+    callback();
+  } else if (retries > 0) {
+    console.log(`AIService not available, retrying in ${delay}ms... (${retries} retries left)`);
+    setTimeout(() => waitForAIService(callback, retries - 1, delay), delay);
+  } else {
+    console.error('Failed to initialize services: AIService not available after multiple retries');
+  }
+}
+
+function waitForContextTracker(callback, retries = 5, delay = 1000) {
+  if (typeof ContextTracker !== 'undefined') {
+    callback();
+  } else if (retries > 0) {
+    console.log(`ContextTracker not available, retrying in ${delay}ms... (${retries} retries left)`);
+    setTimeout(() => waitForContextTracker(callback, retries - 1, delay), delay);
+  } else {
+    console.error('Failed to initialize services: ContextTracker not available after multiple retries');
+  }
+}
+
+// Replace the existing DOMContentLoaded and setTimeout logic
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeServices);
+  document.addEventListener('DOMContentLoaded', () => {
+    waitForProductExtractor(() => {
+      waitForAIService(() => {
+        waitForContextTracker(initializeServices);
+      });
+    });
+  });
 } else {
-  // Add delay for dynamic content on complex sites like Walmart
-  setTimeout(initializeServices, 1000);
+  waitForProductExtractor(() => {
+    waitForAIService(() => {
+      waitForContextTracker(initializeServices);
+    });
+  });
 }
 
 function initializeServices() {
@@ -95,10 +149,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       sendResponse(response);
     } catch (error) {
-      console.log("Response already sent or connection closed:", error.message);
+      console.warn("Response already sent or connection closed:", error.message);
     }
   };
   
+  if (message.type === 'CONTEXT_UPDATED') {
+    console.log("Context updated message received:", message);
+    // Handle context update logic here
+    safeResponse({ status: 'context_handled' });
+    return true;
+  }
+
   // Check if services are initialized
   if (!servicesInitialized && message.type === 'USER_QUERY') {
     safeResponse({ 

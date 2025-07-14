@@ -216,3 +216,5 @@ function parseUserQuery(query) {
 
 // Make it available globally
 window.QueryParser = QueryParser;
+
+console.log("QueryParser script executed");
