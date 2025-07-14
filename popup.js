@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded', initializePopup);
 
 // DOM elements - will be set after DOM loads
-let sendBtn, userInput, messagesDiv, apiKeyBtn, apiKeyInput, apiKeySection;
+let sendBtn, userInput, messagesDiv, apiKeyBtn, apiKeyInput, apiKeySection, preferencesBtn;
 
 async function initializePopup() {
   console.log('Initializing popup...');
@@ -15,6 +15,7 @@ async function initializePopup() {
     apiKeyBtn = document.getElementById('apiKeyBtn');
     apiKeyInput = document.getElementById('apiKeyInput');
     apiKeySection = document.getElementById('apiKeySection');
+    preferencesBtn = document.getElementById('preferencesBtn');
     
     console.log('DOM elements:', {
       sendBtn: !!sendBtn,
@@ -22,7 +23,8 @@ async function initializePopup() {
       messagesDiv: !!messagesDiv,
       apiKeyBtn: !!apiKeyBtn,
       apiKeyInput: !!apiKeyInput,
-      apiKeySection: !!apiKeySection
+      apiKeySection: !!apiKeySection,
+      preferencesBtn: !!preferencesBtn
     });
     
     // Check if all required elements exist
@@ -47,11 +49,15 @@ async function initializePopup() {
       apiKeyBtn.addEventListener('click', handleApiKeySetup);
     }
     
+    if (preferencesBtn) {
+      preferencesBtn.addEventListener('click', handlePreferencesClick);
+    }
+    
     // Set up message listener for content script responses
     setupMessageListener();
     
     // Show welcome message
-    addMessage('bot', 'Welcome to the <b>Walmart Sparkathon Salesman!</b> 🛒<br>Find the best products and deals on <b>Walmart.com</b> with AI-powered recommendations.<br><span style="color:#ffc220;font-weight:600;">Reimagining Customer Experience for Sparkathon 2025!</span>');
+    addMessage('bot', 'Welcome to your <b>Walmart Sparkathon AI Assistant!</b> 🛒<br><br>💬 <b>Chat with me to find the best products!</b><br>🧠 Click the brain icon for preferences & insights<br><br><span style="color:#ffc220;font-weight:600;">Ready to reimagine your shopping experience!</span>');
     
     // Check API key status
     checkApiKeyStatus();
@@ -238,6 +244,16 @@ async function handleApiKeySetup() {
   }
 }
 
+function handlePreferencesClick() {
+  // Send message to background script to open preferences sidebar
+  chrome.runtime.sendMessage({
+    type: 'OPEN_PREFERENCES'
+  });
+  
+  // Show a brief message to the user
+  addMessage('bot', '🧠 Opening preferences panel...');
+}
+
 async function handleSendMessage() {
   const query = userInput.value.trim();
   if (!query) return;
@@ -279,7 +295,7 @@ function sendMessageToContentScript(message) {
       
       chrome.tabs.sendMessage(tabs[0].id, message, (response) => {
         if (chrome.runtime.lastError) {
-          reject(new Error('Unable to connect to the content script. Please ensure you\'re on a supported page (Amazon or Flipkart).'));
+          reject(new Error('Unable to connect to the content script. Please ensure you\'re on a supported page (Walmart, Amazon, or Flipkart).'));
         } else {
           resolve(response);
         }
