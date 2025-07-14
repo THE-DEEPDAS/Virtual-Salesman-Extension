@@ -51,19 +51,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'CONTEXT_BROADCAST') {
     // Forward context broadcasts to all extension components
     console.log("Broadcasting context update");
-    chrome.tabs.query({}, (tabs) => {
-      tabs.forEach(tab => {
-        chrome.tabs.sendMessage(tab.id, {
-          type: 'CONTEXT_UPDATED',
-          context: message.data.context,
-          preferences: message.data.preferences,
-          insights: message.data.insights
-        }).catch(() => {
-          // Ignore errors for tabs that don't have the content script
+
+    const broadcastQueue = [];
+    let isBroadcasting = false;
+
+    const processQueue = () => {
+      if (isBroadcasting || broadcastQueue.length === 0) return;
+
+      isBroadcasting = true;
+      const broadcastData = broadcastQueue.shift();
+
+      chrome.tabs.query({}, (tabs) => {
+        tabs.forEach(tab => {
+          chrome.tabs.sendMessage(tab.id, {
+            type: 'CONTEXT_UPDATED',
+            context: broadcastData.context,
+            preferences: broadcastData.preferences,
+            insights: broadcastData.insights
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.warn(`Failed to send message to tab ${tab.id}:`, chrome.runtime.lastError.message);
+            } else {
+              console.log(`Message sent to tab ${tab.id}:`, response);
+            }
+          });
         });
+
+        setTimeout(() => {
+          isBroadcasting = false;
+          processQueue();
+        }, 5000); // Wait 5 seconds before processing the next item
       });
-    });
-    handleResponse({ status: 'broadcast_sent' });
+    };
+
+    broadcastQueue.push(message.data);
+    console.log(`Broadcast added to queue. Queue length: ${broadcastQueue.length}`);
+    handleResponse({ status: 'broadcast_queued', queueLength: broadcastQueue.length });
+    processQueue();
   }
   
   if (message.type === 'OPEN_PREFERENCES') {

@@ -42,7 +42,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["utils/*.js"],
+      "resources": ["utils/*.js", "content.js"],
       "matches": ["*://*.amazon.in/*", "*://*.amazon.com/*", "*://*.flipkart.com/*", "*://www.walmart.com/*"]
     }
   ]
